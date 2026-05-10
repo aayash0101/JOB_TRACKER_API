@@ -23,7 +23,7 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'API is running'});
 });
 app.use('/api/auth', authRoutes);
-app.use('/api/jobs')
+app.use('/api/jobs', jobRoutes)
 app.use(notFound);
 app.use(errorHandler)
 
