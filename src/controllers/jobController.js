@@ -1,7 +1,7 @@
 import Job from '../models/Job.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
-const createJob = asyncHandler(async(req, res) => {
+const createJob = asyncHandler(async (req, res) => {
     const { company, position, status, location, salary, jobUrl, notes } = req.body;
 
     const job = await Job.create({
@@ -18,28 +18,40 @@ const createJob = asyncHandler(async(req, res) => {
 });
 
 const getJobs = asyncHandler(async (req, res) => {
-    const jobs = await Job.find({ user: req.user._id });
-    res.status(200).json({ success: true, jobs})
+    const { search,  status } = req.query;
+
+    const query = { user: req.user._id }
+    
+    if(search){
+    query.$or = [
+        { company: { $regex: search, $options: 'i' } },
+        { position: { $regex: search, $options: 'i' } }
+    ]
+    }
+    if (status) query.status = status;
+
+    const jobs = await Job.find(query);
+    res.status(200).json({ success: true, jobs })
 })
 
 const getJob = asyncHandler(async (req, res) => {
     const job = await Job.findById(req.params.id);
-    if(!job) {
-       return res.status(404).json({ success: false, message: 'No job found' })
+    if (!job) {
+        return res.status(404).json({ success: false, message: 'No job found' })
     }
-    if ( job.user.toString() !== req.user._id.toString()) {
+    if (job.user.toString() !== req.user._id.toString()) {
         res.status(401);
         throw new Error(' Not Authorized to view this job ');
     }
     res.status(200).json({ success: true, job })
 });
 
-const updateJob = asyncHandler(async(req, res) => {
+const updateJob = asyncHandler(async (req, res) => {
     const job = await Job.findById(req.params.id)
     if (!job) {
-        return res.status(404).json({ success: false, message: 'No job found'})
+        return res.status(404).json({ success: false, message: 'No job found' })
     }
-    if ( job.user.toString() !== req.user._id.toString() ) {
+    if (job.user.toString() !== req.user._id.toString()) {
         res.status(401)
         throw new Error('Not Authorized to Update this Job')
     }
@@ -47,17 +59,17 @@ const updateJob = asyncHandler(async(req, res) => {
     res.status(200).json({ success: true, updatedJob })
 })
 
-const deleteJob = asyncHandler(async(req, res) => {
+const deleteJob = asyncHandler(async (req, res) => {
     const job = await Job.findById(req.params.id);
     if (!job) {
-        return res.status(404).json({success: false, message: 'No job found'})
+        return res.status(404).json({ success: false, message: 'No job found' })
     }
-    if ( job.user.toString() !== req.user._id.toString() ) {
+    if (job.user.toString() !== req.user._id.toString()) {
         res.status(401)
         throw new Error('Not Authorized to Delete this Job')
     }
     await job.deleteOne();
-    res.status(200).json({ success: true, job})
+    res.status(200).json({ success: true, job })
 });
 
 export { createJob, getJobs, getJob, updateJob, deleteJob };
