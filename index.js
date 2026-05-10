@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './src/config/db.js'
 import authRoutes from './src/routes/authRoutes.js'
+import jobRoutes from './src/routes/jobRoutes.js'
 import { errorHandler, notFound } from './src/middleware/error.js';
 
 dotenv.config();
@@ -22,6 +23,7 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'API is running'});
 });
 app.use('/api/auth', authRoutes);
+app.use('/api/jobs')
 app.use(notFound);
 app.use(errorHandler)
 
