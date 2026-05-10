@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { protect } from "../middleware/authmiddleware.js";
+import { protect } from "../middleware/authMiddleware.js";
 import { getJobs, createJob, getJob, updateJob, deleteJob } from '../controllers/jobController.js'
 
 const router = Router();
