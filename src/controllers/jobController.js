@@ -1,9 +1,9 @@
 import Job from '../models/Job.js';
 import mongoose from 'mongoose';
 import asyncHandler from '../utils/asyncHandler.js';
-import Anthropic from '@anthropic-ai/sdk';
+import Groq from 'groq-sdk'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 const createJob = asyncHandler(async (req, res) => {
     const { company, position, status, location, salary, jobUrl, notes, followUpDate } = req.body;
@@ -38,7 +38,6 @@ const getJobs = asyncHandler(async (req, res) => {
     const jobs = await Job.find(query);
     const total = await Job.countDocuments(query);
     res.status(200).json({ success: true, total, jobs })
-
 })
 
 const getJob = asyncHandler(async (req, res) => {
@@ -104,19 +103,16 @@ const generateCoverLetter = asyncHandler(async (req, res) => {
         throw new Error('Not authorized to generate a cover letter for this job');
     }
 
-    const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+    const response = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
         max_tokens: 1024,
-        system: 'You are an expert career coach and professional cover letter writer. Write concise, compelling, personalized cover letters that are professional but not generic.',
         messages: [
-            {
-                role: 'user',
-                content: `Write a cover letter for a ${job.position} role at ${job.company}. Additional context about the applicant: ${extraInfo || 'None'}. Job notes: ${job.notes || 'None'}. Keep it to 3-4 paragraphs, professional tone.`
-            }
+            { role: 'system', content: 'You are an expert career coach and professional cover letter writer. Write concise, compelling, personalized cover letters that are professional but not generic.' },
+            { role: 'user', content: `Write a cover letter for a ${job.position} role at ${job.company}. Additional context about the applicant: ${extraInfo || 'None'}. Job notes: ${job.notes || 'None'}. Keep it to 3-4 paragraphs, professional tone.` }
         ]
     });
 
-    const coverLetter = response.content[0].text;
+    const coverLetter = response.choices[0].message.content;
     if (!coverLetter) {
         res.status(500);
         throw new Error('Failed to generate cover letter');
