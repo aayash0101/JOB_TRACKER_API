@@ -104,16 +104,19 @@ const generateCoverLetter = asyncHandler(async (req, res) => {
         throw new Error('Not authorized to generate a cover letter for this job');
     }
 
-    const systemPrompt = 'You are an expert career coach and professional cover letter writer. Write concise, compelling, personalized cover letters that are professional but not generic.';
-    const userPrompt = `Write a cover letter for a ${job.position} role at ${job.company}. Additional context about the applicant: ${extraInfo || 'None'}. Job notes: ${job.notes || 'None'}. Keep it to 3-4 paragraphs, professional tone.`;
-
-    const completion = await anthropic.completions.create({
+    const response = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        prompt: `${systemPrompt}\n\n${userPrompt}`,
         max_tokens: 1024,
+        system: 'You are an expert career coach and professional cover letter writer. Write concise, compelling, personalized cover letters that are professional but not generic.',
+        messages: [
+            {
+                role: 'user',
+                content: `Write a cover letter for a ${job.position} role at ${job.company}. Additional context about the applicant: ${extraInfo || 'None'}. Job notes: ${job.notes || 'None'}. Keep it to 3-4 paragraphs, professional tone.`
+            }
+        ]
     });
 
-    const coverLetter = completion?.completion || completion?.text || '';
+    const coverLetter = response.content[0].text;
     if (!coverLetter) {
         res.status(500);
         throw new Error('Failed to generate cover letter');
