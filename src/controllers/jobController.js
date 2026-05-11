@@ -1,4 +1,5 @@
 import Job from '../models/Job.js';
+import mongoose from 'mongoose';
 import asyncHandler from '../utils/asyncHandler.js';
 
 const createJob = asyncHandler(async (req, res) => {
@@ -18,23 +19,22 @@ const createJob = asyncHandler(async (req, res) => {
 });
 
 const getJobs = asyncHandler(async (req, res) => {
-    const { search,  status } = req.query;
+    const { search, status } = req.query;
 
     const query = { user: req.user._id }
-    
-    if(search){
-    query.$or = [
-        { company: { $regex: search, $options: 'i' } },
-        { position: { $regex: search, $options: 'i' } }
-    ]
+
+    if (search) {
+        query.$or = [
+            { company: { $regex: search, $options: 'i' } },
+            { position: { $regex: search, $options: 'i' } }
+        ]
     }
     if (status) query.status = status;
 
-    const total = await Job.countDocuments(query);
-    res.status(200).json({ success:true, total, jobs })
-
     const jobs = await Job.find(query);
-    res.status(200).json({ success: true, jobs })
+    const total = await Job.countDocuments(query);
+    res.status(200).json({ success: true, total, jobs })
+
 })
 
 const getJob = asyncHandler(async (req, res) => {
@@ -75,11 +75,11 @@ const deleteJob = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, job })
 });
 
-const getStats = asyncHandler(async(req, res) => {
-    const totalJobs = await Job.countDocuments({ user: req.user._id});
+const getStats = asyncHandler(async (req, res) => {
+    const totalJobs = await Job.countDocuments({ user: req.user._id });
     const stats = await Job.aggregate([
         { $match: { user: new mongoose.Types.ObjectId(req.user._id) } },
-        { $group: { _id: '$status', count: { $sum: 1}}}
+        { $group: { _id: '$status', count: { $sum: 1 } } }
     ])
     res.status(200).json({ success: true, totalJobs, stats })
 })
