@@ -1,6 +1,9 @@
 import Job from '../models/Job.js';
 import mongoose from 'mongoose';
 import asyncHandler from '../utils/asyncHandler.js';
+import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const createJob = asyncHandler(async (req, res) => {
     const { company, position, status, location, salary, jobUrl, notes, followUpDate } = req.body;
@@ -89,4 +92,34 @@ const getStats = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, totalJobs, stats })
 })
 
-export { createJob, getJobs, getJob, updateJob, deleteJob, getStats };
+const generateCoverLetter = asyncHandler(async (req, res) => {
+    const { extraInfo = '' } = req.body;
+
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+        return res.status(404).json({ success: false, message: 'No job found' });
+    }
+    if (job.user.toString() !== req.user._id.toString()) {
+        res.status(401);
+        throw new Error('Not authorized to generate a cover letter for this job');
+    }
+
+    const systemPrompt = 'You are an expert career coach and professional cover letter writer. Write concise, compelling, personalized cover letters that are professional but not generic.';
+    const userPrompt = `Write a cover letter for a ${job.position} role at ${job.company}. Additional context about the applicant: ${extraInfo || 'None'}. Job notes: ${job.notes || 'None'}. Keep it to 3-4 paragraphs, professional tone.`;
+
+    const completion = await anthropic.completions.create({
+        model: 'claude-sonnet-4-20250514',
+        prompt: `${systemPrompt}\n\n${userPrompt}`,
+        max_tokens: 1024,
+    });
+
+    const coverLetter = completion?.completion || completion?.text || '';
+    if (!coverLetter) {
+        res.status(500);
+        throw new Error('Failed to generate cover letter');
+    }
+
+    res.status(200).json({ success: true, coverLetter });
+});
+
+export { createJob, getJobs, getJob, updateJob, deleteJob, getStats, generateCoverLetter };
