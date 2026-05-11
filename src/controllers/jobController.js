@@ -30,6 +30,9 @@ const getJobs = asyncHandler(async (req, res) => {
     }
     if (status) query.status = status;
 
+    const total = await Job.countDocuments(query);
+    res.status(200).json({ success:true, total, jobs })
+
     const jobs = await Job.find(query);
     res.status(200).json({ success: true, jobs })
 })
@@ -72,4 +75,13 @@ const deleteJob = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, job })
 });
 
-export { createJob, getJobs, getJob, updateJob, deleteJob };
+const getStats = asyncHandler(async(req, res) => {
+    const totalJobs = await Job.countDocuments({ user: req.user._id});
+    const stats = await Job.aggregate([
+        { $match: { user: new mongoose.Types.ObjectId(req.user._id) } },
+        { $group: { _id: '$status', count: { $sum: 1}}}
+    ])
+    res.status(200).json({ success: true, totalJobs, stats })
+})
+
+export { createJob, getJobs, getJob, updateJob, deleteJob, getStats };
