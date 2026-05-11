@@ -36,6 +36,9 @@ const jobSchema = new mongoose.Schema({
     appliedAt: {
         type: Date,
         default: Date.now
+    },
+    followUpDate: {
+        type: Date,
     }
 }, { timestamps: true })
 

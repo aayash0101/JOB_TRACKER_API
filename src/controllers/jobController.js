@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import asyncHandler from '../utils/asyncHandler.js';
 
 const createJob = asyncHandler(async (req, res) => {
-    const { company, position, status, location, salary, jobUrl, notes } = req.body;
+    const { company, position, status, location, salary, jobUrl, notes, followUpDate } = req.body;
 
     const job = await Job.create({
         user: req.user._id,
@@ -13,7 +13,8 @@ const createJob = asyncHandler(async (req, res) => {
         location,
         salary,
         jobUrl,
-        notes
+        notes,
+        followUpDate: followUpDate || undefined
     })
     res.status(201).json({ success: true, job })
 });
@@ -58,7 +59,11 @@ const updateJob = asyncHandler(async (req, res) => {
         res.status(401)
         throw new Error('Not Authorized to Update this Job')
     }
-    const updatedJob = await Job.findByIdAndUpdate(req.params.id, req.body, { runValidators: true, new: true });
+    const updateData = { ...req.body }
+    if (updateData.followUpDate === '') {
+        delete updateData.followUpDate
+    }
+    const updatedJob = await Job.findByIdAndUpdate(req.params.id, updateData, { runValidators: true, new: true });
     res.status(200).json({ success: true, updatedJob })
 })
 
